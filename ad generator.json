@@ -1,0 +1,411 @@
+{
+  "name": "My workflow 3",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Generate Ads",
+        "formDescription": "Create Stunning Ads for your products",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Your Product Image",
+              "fieldType": "file",
+              "multipleFiles": false,
+              "acceptFileTypes": ".jpg, .png",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Tagline",
+              "placeholder": "Discount or any major text you want to show in the image..."
+            }
+          ]
+        },
+        "options": {
+          "appendAttribution": false,
+          "buttonLabel": "Generate",
+          "respondWithOptions": {
+            "values": {
+              "formSubmittedText": "We are working on it... we will send you the files on telegram when done!"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        2592,
+        1168
+      ],
+      "id": "2a29dc8d-5767-4b16-a49d-2a6552ed1a29",
+      "name": "On form submission",
+      "webhookId": "c32d6b05-ed22-4ce1-99af-9faf80b151c3"
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "binaryPropertyName": "Your_Product_Image",
+        "destinationKey": "image_base64",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        2928,
+        848
+      ],
+      "id": "a1e468ed-0684-4b95-9361-455895939bea",
+      "name": "Image to Base64"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        3312,
+        848
+      ],
+      "id": "2758a33b-f837-47fc-8b8b-87d98a239a84",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"parts\": [\n        {\n          \"text\": {{ JSON.stringify($json.prompt) }}\n        },\n        {\n          \"inline_data\": {\n            \"mime_type\": \"image/jpeg\",\n            \"data\": {{ JSON.stringify($('Image to Base64').item.json.image_base64) }}\n          }\n        }\n      ]\n    }\n  ],\n  \"generationConfig\": {\n    \"responseModalities\": [\n      \"TEXT\",\n      \"IMAGE\"\n    ]\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3360,
+        1088
+      ],
+      "id": "2506abbf-f239-4456-8d0f-9f17c0c4426b",
+      "name": "Generate Ad",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ywAJRAE76W6eybhd",
+          "name": "google"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9e4e56b7-1daa-4483-a350-229380d290f7",
+              "name": "prompt",
+              "value": "= {{ $json.Prompt }} Make sure product is centered. \nPut In Bold 3d text below the product  with {{ $('Get Styles').item.json['Text Theme']}} \ntheme the words \"{{ $('On form submission').item.json.Tagline }} \"",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3632,
+        864
+      ],
+      "id": "db231019-6256-4c2c-b3da-0be8707fbe65",
+      "name": "Set Prompt"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1e39sIiq12yt1c4Gs1_jUI9SffDWUF9LjQn0Lm02V8fM",
+          "mode": "list",
+          "cachedResultName": "images",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1e39sIiq12yt1c4Gs1_jUI9SffDWUF9LjQn0Lm02V8fM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1e39sIiq12yt1c4Gs1_jUI9SffDWUF9LjQn0Lm02V8fM/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Text Theme": "=",
+            "Status": "skip",
+            "Theme": "={{ $('Get Styles').item.json.Theme }}"
+          },
+          "matchingColumns": [
+            "Theme"
+          ],
+          "schema": [
+            {
+              "id": "Theme",
+              "displayName": "Theme",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Text Theme",
+              "displayName": "Text Theme",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Prompt",
+              "displayName": "Prompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        3008,
+        1264
+      ],
+      "id": "f6848bd3-c3a7-41fc-8a9a-b117f0183c16",
+      "name": "Update Status",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "MUEXJHbfpzL0A0Ri",
+          "name": "Google Sheets account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1e39sIiq12yt1c4Gs1_jUI9SffDWUF9LjQn0Lm02V8fM",
+          "mode": "list",
+          "cachedResultName": "images",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1e39sIiq12yt1c4Gs1_jUI9SffDWUF9LjQn0Lm02V8fM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1e39sIiq12yt1c4Gs1_jUI9SffDWUF9LjQn0Lm02V8fM/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Status",
+              "lookupValue": "to create"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        3088,
+        848
+      ],
+      "id": "509a6e36-a11f-4ef5-9e50-e8b2d17a3d06",
+      "name": "Get Styles",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "MUEXJHbfpzL0A0Ri",
+          "name": "Google Sheets account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "893746984",
+        "binaryData": true,
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3520,
+        1344
+      ],
+      "id": "85ba729b-1802-4c88-ae45-34e25b821aac",
+      "name": "Send the Ad",
+      "webhookId": "af8c105e-e528-4771-a136-bc922976fcc4",
+      "credentials": {
+        "telegramApi": {
+          "id": "s8KVwAe9Ya2hOzG9",
+          "name": "Telegram account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\n\nlet base64Data = null;\n\n// Find first part with inlineData.data\nfor (const part of item.candidates?.[0]?.content?.parts || []) {\n  if (part && typeof part === \"object\" && part.inlineData?.data) {\n    base64Data = part.inlineData.data;\n    break;\n  }\n}\n\nif (!base64Data) {\n  throw new Error(\"No inlineData.data found in any part!\");\n}\n\n// Return in proper binary format\nreturn [\n  {\n    json: {}, // empty JSON\n    binary: {\n      data: {\n        data: base64Data,      // <-- just the Base64 string\n        mimeType: \"image/jpeg\",\n        fileName: \"generated_image.jpg\"\n      }\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3520,
+        1088
+      ],
+      "id": "b563414c-25f4-4ffb-aaf9-0738c5f702f2",
+      "name": "Code"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Image to Base64",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Image to Base64": {
+      "main": [
+        [
+          {
+            "node": "Get Styles",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Set Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Prompt": {
+      "main": [
+        [
+          {
+            "node": "Generate Ad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Ad": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Status": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Styles": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send the Ad": {
+      "main": [
+        [
+          {
+            "node": "Update Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Send the Ad",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "3014c69d-7ac4-4aee-a212-e4e0ab94e11f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1754f794c53fad2bfe6db86c90811c562737e17002dd76c1e1c2eedd3f76e240"
+  },
+  "id": "PW2AvKSxixpQAISn",
+  "tags": []
+}
